@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TempoFlow - Lesson Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2563EB 0%, #14B8A6 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        .main-timer-bar {
+            background: #1e293b;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid #F59E0B;
+        }
+
+        .main-timer-info {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .main-timer-label {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #F59E0B;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .main-timer-display {
+            font-size: 2.5em;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: white;
+            text-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+        }
+
+        .main-timer-display.warning {
+            color: #F59E0B;
+            animation: pulse 1s infinite;
+        }
+
+        .main-timer-display.critical {
+            color: #EF4444;
+            animation: pulse 0.5s infinite;
+        }
+
+        .main-timer-progress {
+            flex: 1;
+            max-width: 300px;
+            margin-left: 30px;
+        }
+
+        .main-timer-progress-bar {
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .main-timer-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #F59E0B 0%, #EF4444 100%);
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .main-timer-status {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            .main-timer-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .main-timer-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .main-timer-progress {
+                width: 100%;
+                margin-left: 0;
+            }
+        }
+
+        .sections-panel, .timer-panel {
+            padding: 30px;
+        }
+
+        .sections-panel {
+            border-right: 2px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .timer-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+
+        h2 {
+            color: #2563EB;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .section {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .section:hover:not(.completed) {
+            border-color: #2563EB;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.1);
+        }
+
+        .section.upcoming {
+            opacity: 0.6;
+        }
+
+        .section.active {
+            border-color: #14B8A6;
+            background: #f0fdfa;
+            box-shadow: 0 4px 16px rgba(20,184,166,0.2);
+            transform: scale(1.02);
+        }
+
+        .section.completed {
+            background: #f0f9f0;
+            color: #166534;
+            text-decoration: line-through;
+            opacity: 0.7;
+            border-color: #10B981;
+        }
+
+        .section.completed::before {
+            content: '✔ ';
+            font-size: 1.2em;
+            color: #10B981;
+            margin-right: 8px;
+        }
+
+        .section-title {
+            font-weight: 600;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-timer {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 8px;
+            color: #2563EB;
+        }
+
+        .current-section-display {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .current-section-title {
+            font-size: 1.8em;
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .countdown {
+            font-size: 4em;
+            font-weight: 700;
+            color: #2563EB;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .countdown.warning {
+            color: #F59E0B;
+            animation: pulse 1s infinite;
+        }
+
+        .countdown.critical {
+            color: #EF4444;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .status-info {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            color: #64748b;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            color: #1e293b;
+            font-size: 1.3em;
+            font-weight: 700;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 14px 28px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2563EB 0%, #14B8A6 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37,99,235,0.3);
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-danger {
+            background: #EF4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #DC2626;
+        }
+
+        #confirm-dialog {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            z-index: 200;
+            display: none;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        #confirm-dialog.show {
+            display: block;
+        }
+
+        #confirm-dialog h3 {
+            color: #2563EB;
+            margin-bottom: 20px;
+        }
+
+        #confirm-dialog button {
+            margin: 0 10px;
+        }
+
+        #edit-form {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 100;
+            place-items: center;
+        }
+
+        #edit-form.show {
+            display: grid;
+        }
+
+        .edit-dialog {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .edit-section-input {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            align-items: center;
+        }
+
+        .edit-section-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .edit-section-input input:focus {
+            outline: none;
+            border-color: #2563EB;
+        }
+
+        .section-list {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .section-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .section-list::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .section-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .section-list::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        @keyframes flash {
+            0%,100%{ background: currentColor; }
+            50%{ background: #f38ba8; }
+        }
+
+        .alert {
+            animation: flash 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏱️ TempoFlow</h1>
+            <p>Lesson Timer - Sequential Task Management</p>
+        </div>
+
+        <div class="main-timer-bar">
+            <div class="main-timer-info">
+                <div class="main-timer-label">
+                    <span>🎓</span>
+                    <span>LESSON TIMER</span>
+                </div>
+                <div id="mainTimerDisplay" class="main-timer-display">1:30:00</div>
+            </div>
+            <div class="main-timer-progress">
+                <div id="mainTimerStatus" class="main-timer-status">Total lesson duration: 90 minutes</div>
+                <div class="main-timer-progress-bar">
+                    <div id="mainTimerProgressFill" class="main-timer-progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="sections-panel">
+                <h2>📋 Lesson Sections</h2>
+                <div id="sections" class="section-list"></div>
+            </div>
+
+            <div class="timer-panel">
+                <div id="timerDisplay" class="current-section-display">
+                    <div>Готов к запуску урока</div>
+                </div>
+                <div class="controls">
+                    <button id="editBtn" class="btn-secondary">✏ Edit Sections</button>
+                    <button id="resetBtn" class="btn-danger">🔄 Reset</button>
+                    <button id="fullscreenBtn" class="btn-primary">📱 Fullscreen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-form">
+        <div class="edit-dialog">
+            <h2>Lesson Sections</h2>
+            <div id="edit-sections"></div>
+            <button id="addSectionBtn" class="btn-primary">+ Add Section</button>
+            <button id="saveSectionsBtn" class="btn-primary">Save</button>
+            <button id="cancelEditBtn" class="btn-secondary">Cancel</button>
+        </div>
+    </div>
+
+    <div id="confirm-dialog">
+        <h3>Section Completed!</h3>
+        <p id="confirm-msg"></p>
+        <div style="margin-top: 30px;">
+            <button id="confirmNextYes" class="btn-primary">Yes, Next</button>
+            <button id="confirmNextNo" class="btn-secondary">No</button>
+        </div>
+    </div>
+
+    <script>
+        let sections = [
+            {id: 1, title: 'Введение', durationMs: 5*60*1000, remainingMs: 5*60*1000, completed: false},
+            {id: 2, title: 'Приветствие учеников и проверка присутствия', durationMs: 3*60*1000, remainingMs: 3*60*1000, completed: false},
+            {id: 3, title: 'Краткое изложение плана урока', durationMs: 2*60*1000, remainingMs: 2*60*1000, completed: false}
+        ];
+        
+        let totalRemainingMs = 90 * 60 * 1000;
+        let globalInterval = null;
+        let sectionInterval = null;
+        let activeSectionId = null;
+        let audioCtx = null;
+        const MAIN_TIMER_DURATION = 90 * 60 * 1000;
+
+        // DOM elements
+        const sectionsEl = document.getElementById('sections');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const mainTimerDisplayEl = document.getElementById('mainTimerDisplay');
+        const mainTimerProgressFill = document.getElementById('mainTimerProgressFill');
+        const mainTimerStatusEl = document.getElementById('mainTimerStatus');
+        const editBtn = document.getElementById('editBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const editForm = document.getElementById('edit-form');
+        const editSectionsEl = document.getElementById('edit-sections');
+        const confirmDialog = document.getElementById('confirm-dialog');
+        const confirmMsg = document.getElementById('confirm-msg');
+
+        function initAudio() {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function beep(freq=800, dur=300) {
+            if (!audioCtx) initAudio();
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            o.frequency.value = freq; o.type = 'sine';
+            g.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur/1000);
+            o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + dur/1000);
+        }
+
+        function formatTime(ms) {
+            const m = Math.floor(ms / 60000), s = Math.floor((ms % 60000) / 1000);
+            return `${m.toString().padStart(2,0)}:${s.toString().padStart(2,0)}`;
+        }
+
+        function updateGlobalTimer() {
+            const progress = ((MAIN_TIMER_DURATION - totalRemainingMs) / MAIN_TIMER_DURATION) * 100;
+            mainTimerProgressFill.style.width = `${progress}%`;
+            mainTimerDisplayEl.textContent = formatTime(totalRemainingMs);
+            
+            mainTimerDisplayEl.className = 'main-timer-display';
+            if (totalRemainingMs <= 0) {
+                mainTimerDisplayEl.classList.add('critical');
+                mainTimerStatusEl.textContent = 'Lesson completed!';
+            } else if (totalRemainingMs <= 5*60*1000) {
+                mainTimerDisplayEl.classList.add('critical');
+            } else if (totalRemainingMs <= 10*60*1000) {
+                mainTimerDisplayEl.classList.add('warning');
+            }
+        }
+
+        function updateSections() {
+            const completedCount = sections.filter(s => s.completed).length;
+            mainTimerStatusEl.textContent = `${completedCount}/${sections.length} completed`;
+            
+            sectionsEl.innerHTML = sections.map(s => {
+                const state = s.completed ? 'completed' : (s.id === activeSectionId ? 'active' : 'upcoming');
+                return `<div class="section ${state}" onclick="${!s.completed ? `startSection(${s.id})` : ''}" role="button" tabindex="0">
+                    <div class="section-title">${s.title}</div>
+                    <div class="section-timer">${formatTime(s.remainingMs)}</div>
+                </div>`;
+            }).join('');
+
+            if (activeSectionId) {
+                const activeSection = sections.find(s => s.id === activeSectionId);
+                const countdownClass = 'countdown';
+                timerDisplay.innerHTML = `
+                    <div class="current-section-title">${activeSection.title}</div>
+                    <div class="${countdownClass}">${formatTime(activeSection.remainingMs)}</div>
+                `;
+            } else {
+                timerDisplay.innerHTML = '<div>Ready to start lesson</div>';
+            }
+        }
+
+        function startGlobalTimer() {
+            if (globalInterval) return;
+            globalInterval = setInterval(() => {
+                totalRemainingMs = Math.max(0, totalRemainingMs - 1000);
+                updateGlobalTimer();
+                if (totalRemainingMs <= 0) {
+                    clearInterval(globalInterval);
+                    beep(400, 1000);
+                }
+            }, 1000);
+        }
+
+        function startSection(id) {
+            const sec = sections.find(s => s.id === id);
+            if (!sec || sec.completed) return;
+            
+            activeSectionId = id;
+            if (sectionInterval) clearInterval(sectionInterval);
+            startGlobalTimer();
+            
+            sectionInterval = setInterval(() => {
+                sec.remainingMs = Math.max(0, sec.remainingMs - 1000);
+                updateSections();
+                if (sec.remainingMs <= 0) {
+                    clearInterval(sectionInterval);
+                    sec.completed = true;
+                    totalRemainingMs = Math.max(0, totalRemainingMs - sec.durationMs + sec.remainingMs);
+                    beep(1200, 500);
+                    document.body.classList.add('alert');
+                    setTimeout(() => document.body.classList.remove('alert'), 500);
+                    showConfirmNext(id);
+                }
+            }, 1000);
+            updateSections();
+        }
+
+        function showConfirmNext(currentId) {
+            const nextSec = sections.find(s => !s.completed && s.id > currentId);
+            confirmMsg.textContent = nextSec ? `Start "${nextSec.title}"?` : 'All sections completed!';
+            confirmDialog.classList.add('show');
+        }
+
+        function confirmNext(yes) {
+            confirmDialog.classList.remove('show');
+            if (yes) {
+                const currentId = activeSectionId;
+                const nextId = sections.find(s => !s.completed && s.id > currentId)?.id;
+                if (nextId) startSection(nextId);
+            }
+            activeSectionId = null;
+            updateSections();
+        }
+
+        function editSections() {
+            editForm.classList.add('show');
+            renderEdit();
+        }
+
+        function renderEdit() {
+            editSectionsEl.innerHTML = sections.map((s, i) => `
+                <div class="edit-section-input">
+                    <input value="${s.title}" onchange="sections[${i}].title=this.value">
+                    <input type="number" value="${Math.round(s.durationMs/60000)}" onchange="updateDuration(${i},this.value)" min="1" style="width: 80px;">
+                    <button class="btn-danger" onclick="sections.splice(${i},1);renderEdit();updateTotal();">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function updateDuration(i, mins) {
+            const sec = sections[i];
+            sec.durationMs = mins * 60000;
+            sec.remainingMs = sec.durationMs;
+            updateTotal();
+        }
+
+        function addSection() {
+            const newId = Math.max(...sections.map(s=>s.id)) + 1;
+            sections.push({id: newId, title: 'New Section', durationMs: 5*60000, remainingMs: 5*60000, completed: false});
+            renderEdit();
+            updateTotal();
+        }
+
+        function updateTotal() {
+            totalRemainingMs = sections.reduce((sum, s) => sum + (s.completed ? 0 : s.durationMs), 0);
+            updateGlobalTimer();
+        }
+
+        function saveSections() {
+            localStorage.setItem('lessonSections', JSON.stringify(sections));
+            editForm.classList.remove('show');
+            updateSections();
+            updateTotal();
+        }
+
+        function closeEdit() {
+            editForm.classList.remove('show');
+            loadState();
+        }
+
+        function resetAll() {
+            sections.forEach(s => { 
+                s.completed = false; 
+                s.remainingMs = s.durationMs; 
+            });
+            clearInterval(globalInterval);
+            clearInterval(sectionInterval);
+            activeSectionId = null;
+            totalRemainingMs = sections.reduce((sum, s) => sum + s.durationMs, 0);
+            localStorage.removeItem('lessonSections');
+            updateSections();
+            updateGlobalTimer();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('lessonSections');
+            if (saved) sections = JSON.parse(saved);
+            updateTotal();
+        }
+
+        // Event listeners
+        editBtn.addEventListener('click', editSections);
+        resetBtn.addEventListener('click', resetAll);
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        document.getElementById('saveSectionsBtn').addEventListener('click', saveSections);
+        document.getElementById('cancelEditBtn').addEventListener('click', closeEdit);
+        document.getElementById('addSectionBtn').addEventListener('click', addSection);
+        document.getElementById('confirmNextYes').addEventListener('click', () => confirmNext(true));
+        document.getElementById('confirmNextNo').addEventListener('click', () => confirmNext(false));
+
+        document.addEventListener('keydown', e => {
+            if (e.code === 'Escape') {
+                editForm.classList.remove('show');
+                confirmDialog.classList.remove('show');
+            }
+        });
+
+        // Initialize
+        loadState();
+        updateTotal();
+        updateSections();
+        updateGlobalTimer();
+    </script>
+</body>
+</html>
