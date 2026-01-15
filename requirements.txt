@@ -1,0 +1,4 @@
+pywebview>=4.4
+pyinstaller --noconsole --onefile \
+  --add-data "web/index.html:web" \
+  desktop/app.py
